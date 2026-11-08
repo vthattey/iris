@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="generator" content="Iris __IRIS_VERSION__">
+<title>__IRIS_TITLE__</title>
+<style>
+/*__IRIS_CSS__*/
+</style>
+</head>
+<body>
+<div id="app">
+  <nav id="sidebar" aria-label="Diagrams">
+    <div id="doc-title"></div>
+    <ul id="diagram-list"></ul>
+    <div id="sidebar-foot">Made with Iris</div>
+  </nav>
+  <main id="main">
+    <header id="header">
+      <button id="toggle-sidebar" class="icon-btn" aria-label="Show diagram list" title="Diagrams">☰</button>
+      <div id="titles">
+        <h1 id="diagram-title"></h1>
+        <p id="diagram-desc"></p>
+      </div>
+      <div id="toolbar" role="toolbar" aria-label="View controls">
+        <button id="zoom-out" class="icon-btn" title="Zoom out" aria-label="Zoom out">−</button>
+        <button id="zoom-in" class="icon-btn" title="Zoom in" aria-label="Zoom in">+</button>
+        <button id="fit" class="text-btn" title="Fit to screen">Fit</button>
+        <button id="collapse-all" class="text-btn" title="Collapse everything">Collapse all</button>
+      </div>
+    </header>
+    <div id="stage" tabindex="-1">
+      <svg id="canvas" xmlns="http://www.w3.org/2000/svg" role="application" aria-label="Diagram">
+        <defs id="defs"></defs>
+        <g id="viewport"></g>
+      </svg>
+      <div id="hint">Click <span class="kbd">▸</span> to expand one level</div>
+      <div id="busy" hidden>Laying out…</div>
+      <div id="error" hidden></div>
+    </div>
+  </main>
+</div>
+<script>
+/*__ELK__*/
+</script>
+<script>
+window.IRIS_DATA = /*__IRIS_DATA__*/;
+</script>
+<script>
+/*__IRIS_VIEWER__*/
+</script>
+</body>
+</html>

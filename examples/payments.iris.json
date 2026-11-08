@@ -1,0 +1,253 @@
+{
+  "iris": "1.0",
+  "title": "Payments monolith",
+  "diagrams": [
+    {
+      "id": "payment-classes",
+      "type": "class",
+      "title": "Payment domain — classes",
+      "description": "Click a package to see its classes, then a class to see its members.",
+      "elements": [
+        { "id": "pkg.controller", "label": "com.app.controller", "kind": "package" },
+        { "id": "pkg.service", "label": "com.app.service", "kind": "package" },
+        { "id": "pkg.repository", "label": "com.app.repository", "kind": "package" },
+        { "id": "pkg.domain", "label": "com.app.domain", "kind": "package" },
+
+        { "id": "PaymentController", "kind": "class", "parent": "pkg.controller", "stereotype": "RestController",
+          "source": { "file": "src/main/java/com/app/controller/PaymentController.java", "line": 18 },
+          "members": [
+            { "name": "paymentService", "kind": "field", "type": "PaymentService", "visibility": "private" },
+            { "name": "create", "kind": "method", "params": "PaymentDTO request", "type": "ResponseEntity<PaymentResponse>", "visibility": "public" },
+            { "name": "get", "kind": "method", "params": "Long id", "type": "ResponseEntity<PaymentResponse>", "visibility": "public" }
+          ] },
+        { "id": "PaymentService", "kind": "interface", "parent": "pkg.service",
+          "members": [
+            { "name": "processPayment", "kind": "method", "params": "PaymentDTO request", "type": "Transaction", "abstract": true }
+          ] },
+        { "id": "PaymentServiceImpl", "kind": "class", "parent": "pkg.service", "stereotype": "Service",
+          "source": { "file": "src/main/java/com/app/service/impl/PaymentServiceImpl.java", "line": 31 },
+          "members": [
+            { "name": "accountRepository", "kind": "field", "type": "AccountRepository", "visibility": "private" },
+            { "name": "transactionRepository", "kind": "field", "type": "TransactionRepository", "visibility": "private" },
+            { "name": "riskClient", "kind": "field", "type": "RiskClient", "visibility": "private" },
+            { "name": "processPayment", "kind": "method", "params": "PaymentDTO request", "type": "Transaction", "visibility": "public", "note": "@Transactional" },
+            { "name": "validate", "kind": "method", "params": "PaymentDTO request, Account account", "type": "void", "visibility": "private" }
+          ] },
+        { "id": "RiskClient", "kind": "class", "parent": "pkg.service",
+          "members": [
+            { "name": "restTemplate", "kind": "field", "type": "RestTemplate", "visibility": "private" },
+            { "name": "checkRisk", "kind": "method", "params": "String account, BigDecimal amount", "type": "RiskScore", "visibility": "public" }
+          ] },
+        { "id": "AccountRepository", "kind": "interface", "parent": "pkg.repository", "stereotype": "Repository",
+          "members": [ { "name": "findByAccountNumber", "kind": "method", "params": "String number", "type": "Account" } ] },
+        { "id": "TransactionRepository", "kind": "interface", "parent": "pkg.repository", "stereotype": "Repository",
+          "members": [ { "name": "save", "kind": "method", "params": "Transaction t", "type": "Transaction" } ] },
+        { "id": "Account", "kind": "class", "parent": "pkg.domain", "stereotype": "Entity",
+          "members": [
+            { "name": "id", "kind": "field", "type": "Long", "visibility": "private" },
+            { "name": "accountNumber", "kind": "field", "type": "String", "visibility": "private" },
+            { "name": "balance", "kind": "field", "type": "BigDecimal", "visibility": "private" },
+            { "name": "status", "kind": "field", "type": "AccountStatus", "visibility": "private" }
+          ] },
+        { "id": "Transaction", "kind": "class", "parent": "pkg.domain", "stereotype": "Entity",
+          "members": [
+            { "name": "id", "kind": "field", "type": "Long", "visibility": "private" },
+            { "name": "account", "kind": "field", "type": "Account", "visibility": "private" },
+            { "name": "amount", "kind": "field", "type": "BigDecimal", "visibility": "private" },
+            { "name": "status", "kind": "field", "type": "TxnStatus", "visibility": "private" }
+          ] },
+        { "id": "AccountStatus", "kind": "enum", "parent": "pkg.domain",
+          "members": [ { "name": "ACTIVE", "kind": "literal" }, { "name": "FROZEN", "kind": "literal" }, { "name": "CLOSED", "kind": "literal" } ] },
+        { "id": "TxnStatus", "kind": "enum", "parent": "pkg.domain",
+          "members": [ { "name": "PENDING", "kind": "literal" }, { "name": "SETTLED", "kind": "literal" }, { "name": "FAILED", "kind": "literal" } ] }
+      ],
+      "relations": [
+        { "from": "PaymentController", "to": "PaymentService", "kind": "dependency" },
+        { "from": "PaymentServiceImpl", "to": "PaymentService", "kind": "realization" },
+        { "from": "PaymentServiceImpl", "to": "AccountRepository", "kind": "dependency" },
+        { "from": "PaymentServiceImpl", "to": "TransactionRepository", "kind": "dependency" },
+        { "from": "PaymentServiceImpl", "to": "RiskClient", "kind": "dependency" },
+        { "from": "Transaction", "to": "Account", "kind": "association", "fromCard": "*", "toCard": "1" },
+        { "from": "Account", "to": "AccountStatus", "kind": "association" },
+        { "from": "Transaction", "to": "TxnStatus", "kind": "association" }
+      ]
+    },
+    {
+      "id": "payment-sequence",
+      "type": "sequence",
+      "title": "POST /api/payments — call sequence",
+      "description": "Click a call to see the calls it makes.",
+      "participants": [
+        { "id": "client", "label": "Client", "kind": "actor" },
+        { "id": "ctrl", "label": "PaymentController", "kind": "boundary" },
+        { "id": "svc", "label": "PaymentServiceImpl", "kind": "control" },
+        { "id": "acctRepo", "label": "AccountRepository", "kind": "entity" },
+        { "id": "risk", "label": "RiskClient", "kind": "control" },
+        { "id": "riskApi", "label": "risk-engine API", "kind": "external" },
+        { "id": "txnRepo", "label": "TransactionRepository", "kind": "entity" },
+        { "id": "db", "label": "Database", "kind": "database" }
+      ],
+      "messages": [
+        { "from": "client", "to": "ctrl", "label": "POST /api/payments", "children": [
+          { "from": "ctrl", "to": "svc", "label": "processPayment(request)", "children": [
+            { "from": "svc", "to": "acctRepo", "label": "findByAccountNumber(number)", "children": [
+              { "from": "acctRepo", "to": "db", "label": "SELECT * FROM accounts WHERE account_number = ?" },
+              { "from": "db", "to": "acctRepo", "label": "row", "kind": "reply" }
+            ] },
+            { "from": "acctRepo", "to": "svc", "label": "Account", "kind": "reply" },
+            { "from": "svc", "to": "svc", "label": "validate(request, account)" },
+            { "from": "svc", "to": "risk", "label": "checkRisk(account, amount)", "children": [
+              { "from": "risk", "to": "riskApi", "label": "POST /api/check" },
+              { "from": "riskApi", "to": "risk", "label": "RiskScore", "kind": "reply" }
+            ] },
+            { "from": "svc", "to": "txnRepo", "label": "save(transaction)", "children": [
+              { "from": "txnRepo", "to": "db", "label": "INSERT INTO transactions ...", "note": "Fires trg_txn_audit → transaction_audit_log" }
+            ] },
+            { "from": "svc", "to": "ctrl", "label": "Transaction", "kind": "reply" }
+          ] },
+          { "from": "ctrl", "to": "client", "label": "201 Created", "kind": "reply" }
+        ] }
+      ]
+    },
+    {
+      "id": "payment-flow",
+      "type": "activity",
+      "title": "POST /api/payments — processing flow",
+      "description": "Click a sub-flow to open its steps.",
+      "elements": [
+        { "id": "start", "kind": "start" },
+        { "id": "receive", "label": "Receive PaymentDTO", "kind": "action" },
+        { "id": "lookup", "label": "Look up account", "kind": "subflow" },
+        { "id": "lookup.query", "label": "Query accounts by number", "kind": "action", "parent": "lookup" },
+        { "id": "lookup.map", "label": "Map row to Account", "kind": "action", "parent": "lookup" },
+        { "id": "found", "label": "Account active?", "kind": "decision" },
+        { "id": "reject", "label": "Return 422", "kind": "action" },
+        { "id": "risk", "label": "Check risk", "kind": "subflow" },
+        { "id": "risk.call", "label": "POST risk-engine /api/check", "kind": "action", "parent": "risk" },
+        { "id": "risk.eval", "label": "Score above threshold?", "kind": "decision", "parent": "risk" },
+        { "id": "risk.block", "label": "Mark BLOCKED", "kind": "action", "parent": "risk" },
+        { "id": "save", "label": "Persist transaction", "kind": "subflow" },
+        { "id": "save.build", "label": "Build TransactionEntity from DTO", "kind": "action", "parent": "save" },
+        { "id": "save.insert", "label": "INSERT transactions", "kind": "action", "parent": "save" },
+        { "id": "save.trigger", "label": "trg_txn_audit writes audit row", "kind": "action", "parent": "save" },
+        { "id": "respond", "label": "Return 201 with id", "kind": "action" },
+        { "id": "end", "kind": "end" }
+      ],
+      "relations": [
+        { "from": "start", "to": "receive", "kind": "flow" },
+        { "from": "receive", "to": "lookup", "kind": "flow" },
+        { "from": "lookup", "to": "found", "kind": "flow" },
+        { "from": "lookup.query", "to": "lookup.map", "kind": "flow" },
+        { "from": "found", "to": "reject", "kind": "flow", "label": "no" },
+        { "from": "found", "to": "risk", "kind": "flow", "label": "yes" },
+        { "from": "risk.call", "to": "risk.eval", "kind": "flow" },
+        { "from": "risk.eval", "to": "risk.block", "kind": "flow", "label": "yes" },
+        { "from": "risk", "to": "save", "kind": "flow" },
+        { "from": "save.build", "to": "save.insert", "kind": "flow" },
+        { "from": "save.insert", "to": "save.trigger", "kind": "flow" },
+        { "from": "save", "to": "respond", "kind": "flow" },
+        { "from": "respond", "to": "end", "kind": "flow" },
+        { "from": "reject", "to": "end", "kind": "flow" }
+      ]
+    },
+    {
+      "id": "payments-components",
+      "type": "component",
+      "title": "Payments monolith — components",
+      "direction": "RIGHT",
+      "elements": [
+        { "id": "user", "label": "Banking client", "kind": "actor" },
+        { "id": "mono", "label": "Payments monolith", "kind": "system" },
+        { "id": "web", "label": "REST layer", "kind": "container", "parent": "mono" },
+        { "id": "web.payments", "label": "PaymentController", "kind": "component", "parent": "web" },
+        { "id": "web.accounts", "label": "AccountController", "kind": "component", "parent": "web" },
+        { "id": "core", "label": "Service layer", "kind": "container", "parent": "mono" },
+        { "id": "core.payment", "label": "PaymentService", "kind": "component", "parent": "core" },
+        { "id": "core.settle", "label": "SettlementJob", "kind": "component", "parent": "core", "stereotype": "cron 0 0 2 * * ?" },
+        { "id": "core.risk", "label": "RiskClient", "kind": "component", "parent": "core" },
+        { "id": "db", "label": "Payments DB", "kind": "database" },
+        { "id": "risk", "label": "risk-engine", "kind": "external" },
+        { "id": "clearing", "label": "Clearing house", "kind": "external" }
+      ],
+      "relations": [
+        { "from": "user", "to": "web.payments", "kind": "calls", "label": "HTTPS/JSON" },
+        { "from": "web.payments", "to": "core.payment", "kind": "calls" },
+        { "from": "web.accounts", "to": "db", "kind": "reads" },
+        { "from": "core.payment", "to": "core.risk", "kind": "calls" },
+        { "from": "core.payment", "to": "db", "kind": "writes", "label": "transactions" },
+        { "from": "core.risk", "to": "risk", "kind": "calls", "label": "POST /api/check" },
+        { "from": "core.settle", "to": "db", "kind": "writes", "label": "balances, settlement_log" },
+        { "from": "core.settle", "to": "clearing", "kind": "calls" }
+      ]
+    },
+    {
+      "id": "transaction-states",
+      "type": "state",
+      "title": "Transaction lifecycle",
+      "elements": [
+        { "id": "init", "kind": "initial" },
+        { "id": "PENDING", "kind": "state" },
+        { "id": "PROCESSING", "kind": "composite" },
+        { "id": "PROCESSING.init", "kind": "initial", "parent": "PROCESSING" },
+        { "id": "PROCESSING.risk", "label": "RiskCheck", "kind": "state", "parent": "PROCESSING" },
+        { "id": "PROCESSING.clearing", "label": "AwaitingClearing", "kind": "state", "parent": "PROCESSING" },
+        { "id": "SETTLED", "kind": "state" },
+        { "id": "FAILED", "kind": "state" },
+        { "id": "done", "kind": "final" }
+      ],
+      "relations": [
+        { "from": "init", "to": "PENDING", "kind": "transition" },
+        { "from": "PENDING", "to": "PROCESSING", "kind": "transition", "label": "settlement run" },
+        { "from": "PROCESSING.init", "to": "PROCESSING.risk", "kind": "transition" },
+        { "from": "PROCESSING.risk", "to": "PROCESSING.clearing", "kind": "transition", "label": "score ok" },
+        { "from": "PROCESSING.risk", "to": "FAILED", "kind": "transition", "label": "blocked" },
+        { "from": "PROCESSING", "to": "SETTLED", "kind": "transition", "label": "clearing ack" },
+        { "from": "PROCESSING", "to": "FAILED", "kind": "transition", "label": "timeout [retries > 3]" },
+        { "from": "SETTLED", "to": "done", "kind": "transition" },
+        { "from": "FAILED", "to": "done", "kind": "transition" }
+      ]
+    },
+    {
+      "id": "payments-er",
+      "type": "er",
+      "title": "Payments schema",
+      "description": "Click a table to see its columns.",
+      "elements": [
+        { "id": "customers", "kind": "table", "members": [
+          { "name": "id", "kind": "column", "type": "BIGINT", "pk": true },
+          { "name": "name", "kind": "column", "type": "VARCHAR(200)" },
+          { "name": "kyc_status", "kind": "column", "type": "VARCHAR(20)" }
+        ] },
+        { "id": "accounts", "kind": "table", "members": [
+          { "name": "id", "kind": "column", "type": "BIGINT", "pk": true },
+          { "name": "customer_id", "kind": "column", "type": "BIGINT", "fk": "customers.id" },
+          { "name": "account_number", "kind": "column", "type": "VARCHAR(34)", "unique": true },
+          { "name": "status", "kind": "column", "type": "VARCHAR(20)" }
+        ] },
+        { "id": "balances", "kind": "table", "members": [
+          { "name": "account_id", "kind": "column", "type": "BIGINT", "pk": true, "fk": "accounts.id" },
+          { "name": "amount", "kind": "column", "type": "DECIMAL(19,4)" },
+          { "name": "updated_at", "kind": "column", "type": "TIMESTAMP" }
+        ] },
+        { "id": "transactions", "kind": "table", "note": "Trigger trg_txn_audit AFTER INSERT", "members": [
+          { "name": "id", "kind": "column", "type": "BIGINT", "pk": true },
+          { "name": "account_id", "kind": "column", "type": "BIGINT", "fk": "accounts.id" },
+          { "name": "amount", "kind": "column", "type": "DECIMAL(19,4)" },
+          { "name": "status", "kind": "column", "type": "VARCHAR(20)", "note": "CHECK IN ('PENDING','SETTLED','FAILED')" },
+          { "name": "created_at", "kind": "column", "type": "TIMESTAMP" }
+        ] },
+        { "id": "transaction_audit_log", "kind": "table", "members": [
+          { "name": "id", "kind": "column", "type": "BIGINT", "pk": true },
+          { "name": "txn_id", "kind": "column", "type": "BIGINT", "fk": "transactions.id" },
+          { "name": "created_at", "kind": "column", "type": "TIMESTAMP" }
+        ] }
+      ],
+      "relations": [
+        { "from": "accounts", "to": "customers", "kind": "relationship", "fromCard": "*", "toCard": "1", "label": "owned by" },
+        { "from": "balances", "to": "accounts", "kind": "relationship", "fromCard": "1", "toCard": "1" },
+        { "from": "transactions", "to": "accounts", "kind": "relationship", "fromCard": "*", "toCard": "1" },
+        { "from": "transaction_audit_log", "to": "transactions", "kind": "relationship", "fromCard": "*", "toCard": "1", "label": "audits" }
+      ]
+    }
+  ]
+}

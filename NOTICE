@@ -1,0 +1,14 @@
+Iris
+Copyright (c) 2026 Iris contributors. Licensed under the MIT License (see LICENSE).
+
+This project's design is derived from the "code-flow-graph" agent skill:
+  - Original author: biubiubiu533 (published via the openclaw/skills registry)
+  - Redistributed in LeoYeAI/openclaw-master-skills
+    Copyright (c) 2026 MyClaw.ai (LeoYeAI), MIT License
+Concepts taken from it: a standalone HTML viewer driven by a separate data file,
+diagrams that start fast and go deep on demand, collapsible children, and
+connections that re-route to the nearest visible parent when children are collapsed.
+
+Bundled third-party software (inlined into every generated HTML file):
+  - ELK (elkjs) — Eclipse Layout Kernel compiled to JavaScript.
+    Eclipse Public License 2.0. https://github.com/kieler/elkjs
