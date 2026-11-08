@@ -1,0 +1,36 @@
+name: Bug report
+description: Something renders, imports or analyzes incorrectly
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: Thanks for reporting! The smallest input that shows the problem helps most.
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      options: [Viewer (HTML), Code analysis, PlantUML import, Mermaid import, Mermaid export, Validation, CLI, Agent Skill, Other]
+    validations:
+      required: true
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened, and what did you expect?
+    validations:
+      required: true
+  - type: textarea
+    id: repro
+    attributes:
+      label: Steps to reproduce
+      description: The command you ran and a minimal input (Iris JSON, PlantUML/Mermaid, or a few source files). Remove anything confidential.
+      render: shell
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Iris version (`iris --version`)
+  - type: input
+    id: env
+    attributes:
+      label: Node.js version, OS and browser
