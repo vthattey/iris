@@ -16,14 +16,20 @@ Usage
   iris validate <input.json|->
   iris export   <input.json|->  [-o out.md] [--dir <folder>]     Mermaid output
   iris import   <file.mmd|file.puml> [-o out.iris.json]          Mermaid / PlantUML → Iris
-  iris analyze  <folder> [--lang java|ts|python] [-o out.iris.json]
+  iris analyze  <folder> [--lang java|ts|python] [-o out.iris.json] [--html]
   iris schema                                                     Print the JSON Schema path
 
 Options
   -o, --out       Output file (default: next to the input)
   --diagram       Render only the diagram with this id
   --dir           Export: one .mmd file per diagram into this folder
-  --lang          Analyze: language (default: detected)
+  --lang          Analyze: java | ts | python (default: the most common in the folder)
+  --html          Analyze: also write the interactive HTML next to the JSON
+  --title         Analyze: document title (default: folder name)
+  --max-depth     Analyze: call-flow depth limit (default 6)
+  --max-flows     Analyze: maximum call-flow diagrams (default 300)
+  --include-tests Analyze: include test sources
+  --keep-accessors Analyze: keep getters/setters in class diagrams
   --strict        Treat validation warnings as errors
   -h, --help      Show this help
   -v, --version   Show the version
@@ -72,6 +78,12 @@ async function main() {
       diagram: { type: 'string' },
       dir: { type: 'string' },
       lang: { type: 'string' },
+      title: { type: 'string' },
+      html: { type: 'boolean' },
+      'include-tests': { type: 'boolean' },
+      'keep-accessors': { type: 'boolean' },
+      'max-depth': { type: 'string' },
+      'max-flows': { type: 'string' },
       strict: { type: 'boolean' },
       help: { type: 'boolean', short: 'h' },
       version: { type: 'boolean', short: 'v' },
@@ -117,9 +129,17 @@ async function main() {
     case 'analyze': {
       if (!input) fail('missing folder to analyze', 2);
       const { analyze } = await import('../src/analyze/index.js');
-      const doc = await analyze(input, { lang: values.lang });
+      const { doc, warnings, stats } = await analyze(input, {
+        lang: values.lang, includeTests: values['include-tests'], keepAccessors: values['keep-accessors'],
+        maxDepth: values['max-depth'] ? Number(values['max-depth']) : undefined,
+        maxFlows: values['max-flows'] ? Number(values['max-flows']) : undefined, title: values.title,
+      });
+      for (const w of warnings) process.stderr.write(`warning: ${w}\n`);
+      process.stderr.write(`analyzed ${stats.files} ${stats.lang} files: ${stats.types} types, ${stats.entries} entry points, ${doc.diagrams.length} diagrams\n`);
       checked(doc, false);
-      write(values.out || join(input, 'iris-analysis.iris.json'), JSON.stringify(doc, null, 2) + '\n');
+      const out = values.out || 'iris-analysis.iris.json';
+      write(out, JSON.stringify(doc, null, 2) + '\n');
+      if (values.html) write(out.replace(/(\.iris)?\.json$/, '') + '.html', renderHtml(doc));
       break;
     }
     case 'schema': {
