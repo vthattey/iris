@@ -1,0 +1,13 @@
+@startuml
+actor User
+package "Payments monolith" {
+  [PaymentController] as pc
+  [PaymentService] as ps
+}
+database "Payments DB" as db
+cloud "risk-engine" as risk
+User --> pc : HTTPS
+pc --> ps
+ps --> db : writes
+ps ..> risk : check
+@enduml

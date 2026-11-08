@@ -1,0 +1,11 @@
+@startuml
+[*] --> PENDING
+PENDING --> PROCESSING : settlement run
+state PROCESSING {
+  [*] --> RiskCheck
+  RiskCheck --> AwaitingClearing : score ok
+}
+PROCESSING --> SETTLED : ack
+PROCESSING --> FAILED : timeout
+SETTLED --> [*]
+@enduml

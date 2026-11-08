@@ -1,0 +1,14 @@
+@startuml
+actor Client
+participant "PaymentController" as ctrl
+participant "PaymentService" as svc
+database DB
+Client -> ctrl : POST /api/payments
+activate ctrl
+ctrl -> svc ++ : processPayment(req)
+svc -> DB : INSERT transactions
+DB --> svc : ok
+return Transaction
+ctrl --> Client : 201
+deactivate ctrl
+@enduml

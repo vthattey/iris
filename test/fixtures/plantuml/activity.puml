@@ -1,0 +1,16 @@
+@startuml
+start
+:Receive request;
+if (Account active?) then (yes)
+  :Check risk;
+  if (Risky?) then (yes)
+    :Block;
+  else (no)
+    :Save transaction;
+  endif
+else (no)
+  :Return 422;
+endif
+:Respond;
+stop
+@enduml

@@ -1,0 +1,22 @@
+@startuml
+package "com.app.service" {
+  interface PaymentService {
+    +processPayment(PaymentDTO request) : Transaction
+  }
+  class PaymentServiceImpl <<Service>> {
+    -accountRepository : AccountRepository
+    +processPayment(PaymentDTO request) : Transaction
+    {static} +MAX_RETRIES : int
+  }
+}
+enum TxnStatus {
+  PENDING
+  SETTLED
+}
+abstract class BaseEntity
+class Transaction
+PaymentService <|.. PaymentServiceImpl
+BaseEntity <|-- Transaction
+Transaction "*" --> "1" Account : belongs to
+PaymentServiceImpl ..> TxnStatus
+@enduml

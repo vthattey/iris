@@ -1,0 +1,13 @@
+@startuml
+entity accounts {
+  * id : BIGINT <<PK>>
+  --
+  * customer_id : BIGINT <<FK>>
+  status : VARCHAR(20)
+}
+entity customers {
+  * id : BIGINT <<PK>>
+  name : VARCHAR(200)
+}
+accounts }o--|| customers : owned by
+@enduml
