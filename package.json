@@ -4,6 +4,15 @@
   "description": "Interactive UML and ER diagrams that open collapsed and expand one level per click. Offline single-file HTML output, Mermaid export, CLI and Agent Skill.",
   "type": "module",
   "license": "MIT",
+  "author": "Vikas (https://github.com/vthattey)",
+  "homepage": "https://github.com/vthattey/iris#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/vthattey/iris.git"
+  },
+  "bugs": {
+    "url": "https://github.com/vthattey/iris/issues"
+  },
   "bin": {
     "iris": "bin/iris.js"
   },
@@ -24,21 +33,35 @@
     "NOTICE"
   ],
   "engines": {
-    "node": ">=18"
+    "node": ">=18.17"
   },
   "scripts": {
     "test": "node --test test/*.test.js",
-    "examples": "node scripts/build-examples.js"
+    "examples": "node scripts/build-examples.js",
+    "docs:images": "npm run examples && node scripts/capture-docs.cjs"
   },
   "keywords": [
     "uml",
     "er-diagram",
     "class-diagram",
     "sequence-diagram",
+    "activity-diagram",
+    "state-diagram",
+    "component-diagram",
     "interactive",
     "diagram",
+    "architecture",
+    "code-visualization",
+    "static-analysis",
+    "java",
+    "spring",
+    "typescript",
+    "python",
+    "plantuml",
     "mermaid",
-    "agent-skill"
+    "agent-skill",
+    "copilot",
+    "claude-code"
   ],
   "dependencies": {
     "ajv": "8.17.1",
