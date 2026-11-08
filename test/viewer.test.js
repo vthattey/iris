@@ -11,11 +11,15 @@ const require = createRequire(import.meta.url);
 let playwright = null;
 try { playwright = require('playwright'); } catch { /* optional */ }
 
-test('every diagram opens collapsed and expands one level per click', { skip: !playwright && 'playwright not installed' }, async () => {
+test('every diagram opens collapsed and expands one level per click', { skip: !playwright && 'playwright not installed' }, async (t) => {
+  let browser;
+  try { browser = await playwright.chromium.launch(); } catch (e) {
+    t.skip(`no browser available (${e.message.split('\n')[0]}); run "npx playwright install chromium"`);
+    return;
+  }
   const doc = JSON.parse(readFileSync(new URL('../examples/payments.iris.json', import.meta.url), 'utf8'));
   const file = join(mkdtempSync(join(tmpdir(), 'iris-')), 'payments.html');
   writeFileSync(file, renderHtml(doc));
-  const browser = await playwright.chromium.launch();
   try {
     const page = await browser.newPage({ viewport: { width: 1280, height: 800 } });
     const errors = [];

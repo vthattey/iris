@@ -392,7 +392,12 @@ function tableName(t) {
   if (en && (en.args.name || en.args.value) && !/^\{/.test(en.args.value || '')) return en.args.name || en.args.value;
   const tn = t.fields.find((f) => f.name === '__tablename__');
   if (tn && tn.value) return stripQuotes(tn.value);
-  if (t.lang === 'python' && isDjango(t)) return snake(t.simpleName);
+  if (t.lang === 'python' && isDjango(t)) {
+    // Django's default: <app label>_<model name in lower case>; the app is the package holding models.py
+    const parts = t.pkg.split('.');
+    const app = parts[parts.length - 1] === 'models' ? parts[parts.length - 2] : parts[parts.length - 1];
+    return `${app ? app + '_' : ''}${t.simpleName.toLowerCase()}`;
+  }
   return t.simpleName;
 }
 const isDjango = (t) => t.extends.some((e) => /(^|\.)Model$/.test(e) && /models\./.test(e));
@@ -403,10 +408,12 @@ function buildEr(types, { resolve, hierarchy, supers }) {
   if (!entities.length) return null;
   const elements = [], relations = [];
   const pkOf = (t) => {
-    for (const x of hierarchy(t)) for (const f of x.fields) if (hasAnn(f, 'Id', 'EmbeddedId', 'PrimaryGeneratedColumn', 'PrimaryColumn') || /primary_key\s*=\s*True/.test(f.value || '')) return { name: colName(f), type: f.type };
+    for (const x of hierarchy(t)) for (const f of x.fields) if (hasAnn(f, 'Id', 'EmbeddedId', 'PrimaryGeneratedColumn', 'PrimaryColumn') || /primary_key\s*=\s*True/.test(f.value || '')) return { name: colName(f, t.lang), type: pyType(f) || f.type };
+    if (isDjango(t)) return { name: 'id', type: 'AutoField' };
     return { name: 'id', type: 'id' };
   };
-  const colName = (f) => (ann(f, 'Column')?.args.name || ann(f, 'Column')?.args.value || f.name).replace(/^["']|["']$/g, '');
+  // TypeORM's first @Column argument is the column type, so only Java (@Column(name=...)) reads `value` as a name.
+  const colName = (f, lang) => (ann(f, 'Column')?.args.name || (lang !== 'ts' && ann(f, 'Column')?.args.value) || f.name).replace(/^["']|["']$/g, '');
   for (const t of entities) {
     const table = tableName(t);
     const cols = [];
@@ -441,17 +448,19 @@ function buildEr(types, { resolve, hierarchy, supers }) {
         } else {
           const target = resolve(pyFk[2].split('.').pop(), t);
           targetTable = target ? tableName(target) : snake(pyFk[2].split('.').pop());
+          if (target) targetType = pkOf(target).type;
         }
         const jc = ann(f, 'JoinColumn');
         const name = jc?.args.name || jc?.args.value || (pyFk && !pyFk[0].startsWith('ForeignKey') ? `${f.name}_id` : (pyFk ? f.name : `${f.name}_id`));
-        const col = { name: stripQuotes(name), kind: 'column', type: baseType(targetType), fk: `${targetTable}.${targetPk}` };
+        const ownType = pyType(f);
+        const col = { name: stripQuotes(name), kind: 'column', type: ownType && !/Field$|^ForeignKey/.test(ownType) ? ownType : baseType(targetType), fk: `${targetTable}.${targetPk}` };
         if (jc?.args.nullable === 'false' || toOne?.args.optional === 'false' || /nullable\s*=\s*False/.test(f.value || '')) col.nullable = false;
         cols.push(col);
         relations.push({ from: SAFE(table), to: SAFE(targetTable), kind: 'relationship', fromCard: ann(f, 'OneToOne') || /OneToOneField/.test(f.value || '') ? '1' : '*', toCard: '1' });
         continue;
       }
       const c = ann(f, 'Column') || {};
-      const col = { name: colName(f), kind: 'column', type: pyType(f) || baseType(f.type) || 'unknown' };
+      const col = { name: colName(f, t.lang), kind: 'column', type: pyType(f) || baseType(f.type) || 'unknown' };
       if (hasAnn(f, 'Id', 'EmbeddedId', 'PrimaryGeneratedColumn', 'PrimaryColumn') || /primary_key\s*=\s*True/.test(f.value || '')) col.pk = true;
       if (c.args?.nullable === 'false' || hasAnn(f, 'NotNull', 'NonNull') || /nullable\s*=\s*False/.test(f.value || '')) col.nullable = false;
       if (c.args?.unique === 'true' || /unique\s*=\s*True/.test(f.value || '')) col.unique = true;

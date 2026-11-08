@@ -76,3 +76,35 @@ test('Python: FastAPI routes, module-level services and dataclasses', async () =
   assert.ok(labels.some((l) => l.startsWith('find_by_number')));
   assert.ok(labels.some((l) => l.startsWith('_validate')));
 });
+
+test('Java: JAX-RS resources are entry points', async () => {
+  const { doc } = await analyze(fx('java-monolith'));
+  const f = flow(doc, 'GET /legacy/accounts/{number}');
+  assert.ok(f, 'JAX-RS @Path + @GET detected');
+  assert.ok(walk(f.messages).some((m) => m.to === 'db' && m.label === 'SELECT FROM accounts'));
+});
+
+test('TypeScript: TypeORM entities become an ER diagram', async () => {
+  const { doc } = await analyze(fx('ts-typeorm'));
+  assert.deepEqual(validate(doc).errors, []);
+  const er = doc.diagrams.find((d) => d.type === 'er');
+  const cols = (t) => er.elements.find((e) => e.id === t).members;
+  assert.ok(cols('customers').some((c) => c.name === 'name'), '@Column("varchar") keeps the property name');
+  assert.ok(cols('orders').some((c) => c.name === 'total_amount' && c.nullable === false));
+  assert.equal(cols('orders').find((c) => c.name === 'customer_id').fk, 'customers.id');
+  assert.ok(!cols('customers').some((c) => c.name === 'orders'), '@OneToMany is not a column');
+});
+
+test('Python: SQLAlchemy and Django models become an ER diagram', async () => {
+  const { doc } = await analyze(fx('python-orm'));
+  assert.deepEqual(validate(doc).errors, []);
+  const er = doc.diagrams.find((d) => d.type === 'er');
+  const t = (id) => er.elements.find((e) => e.id === id);
+  const fk = t('orders').members.find((c) => c.name === 'customer_id');
+  assert.deepEqual([fk.type, fk.fk, fk.nullable], ['Integer', 'customers.id', false]);
+  assert.ok(t('customers').members.find((c) => c.name === 'email').unique);
+  assert.ok(!t('customers').members.some((c) => c.name === 'orders'), 'relationship() is not a column');
+  assert.ok(t('blog_post'), 'Django default table name <app>_<model>');
+  assert.equal(t('blog_post').members.find((c) => c.name === 'author_id').fk, 'blog_author.id');
+  assert.ok(t('blog_author').members.find((c) => c.name === 'id').pk, 'implicit Django id');
+});
