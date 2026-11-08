@@ -54,12 +54,11 @@ export function doc(title, diagram) {
 export function parseMember(raw, style) {
   let s = raw.trim();
   if (!s) return null;
-  const vis = { '+': 'public', '-': 'private', '#': 'protected', '~': 'package' }[s[0]];
-  if (vis) s = s.slice(1).trim();
   const m = {};
-  if (vis) m.visibility = vis;
-  if (/\{static\}|\$$/.test(s)) { m.static = true; s = s.replace(/\{static\}|\$$/g, '').trim(); }
+  if (/\{(static|classifier)\}|\$$/.test(s)) { m.static = true; s = s.replace(/\{(static|classifier)\}|\$$/g, '').trim(); }
   if (/\{abstract\}|\*$/.test(s)) { m.abstract = true; s = s.replace(/\{abstract\}|\*$/g, '').trim(); }
+  const vis = { '+': 'public', '-': 'private', '#': 'protected', '~': 'package' }[s[0]];
+  if (vis) { s = s.slice(1).trim(); m.visibility = vis; }
   const fixGen = (t) => (t ? t.replace(/~([^~]+)~/g, '<$1>').trim() : t);
   const call = s.match(/^([\w$<>~]+)\s*\(([^)]*)\)\s*(?::\s*)?(.*)$/);
   if (call) {

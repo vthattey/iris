@@ -757,6 +757,10 @@
     if (DATA.diagrams.length < 2) $('sidebar').style.display = 'none';
     var want = decodeURIComponent(location.hash.slice(1));
     select(want || DATA.diagrams[0].id);
+    window.addEventListener('hashchange', function () {
+      var id = decodeURIComponent(location.hash.slice(1));
+      if (id && (!current || current.d.id !== id)) select(id);
+    });
   }
 
   // Test hooks (used by Iris's own browser tests)

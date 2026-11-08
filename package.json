@@ -9,7 +9,10 @@
   },
   "main": "src/index.js",
   "exports": {
-    ".": "./src/index.js"
+    ".": "./src/index.js",
+    "./analyze": "./src/analyze/index.js",
+    "./import": "./src/import/index.js",
+    "./schema": "./schema/iris-diagram.schema.json"
   },
   "files": [
     "bin",
@@ -24,7 +27,7 @@
     "node": ">=18"
   },
   "scripts": {
-    "test": "node --test test/",
+    "test": "node --test test/*.test.js",
     "examples": "node scripts/build-examples.js"
   },
   "keywords": [
